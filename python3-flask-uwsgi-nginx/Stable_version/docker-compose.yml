@@ -1,0 +1,62 @@
+version: '3'
+services:
+
+  nginx:
+    hostname: nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    networks:
+      - npm_net
+    depends_on:
+      - flask
+    volumes:
+      - ./log:/log
+      - ./sock:/sock
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    restart: always
+    command: |
+      sh -c '
+      /usr/sbin/nginx'
+
+  flask:
+    hostname: flask
+    build:
+      context: ./flask
+      dockerfile: Dockerfile
+    networks:
+      - npm_net
+    depends_on:
+      - mysql
+    volumes:
+      - ./log:/log
+      - ./sock:/sock
+      - ./wwwroot:/app
+    restart: always
+    # environment:
+    #   - LANG=zh_CN.UTF-8
+    command: |
+      sh -c '
+      pip3 install -r /app/requirements.txt
+      cp /app/uwsgi.ini /etc/uwsgi/uwsgi.ini
+      cp /app/supervisord.conf /etc/supervisord.conf
+      /usr/bin/supervisord'
+      
+  mysql:
+    hostname: mysql
+    image: mysql:5.7
+    networks:
+      - npm_net
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    command: --character-set-server=utf8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: test2018123456
+      MYSQL_DATABASE: test2018
+
+networks:
+  npm_net:
+
